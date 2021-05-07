@@ -137,6 +137,7 @@ void Clec0430Doc::Dump(CDumpContext& dc) const
 
 // Clec0430Doc コマンド
 // インタフェイスの仕様が変わらないときはviewを変えなくてよい
+
 void Clec0430Doc::NewLine(CPoint point)
 {
 	Points[LinesNum][0] = point;
