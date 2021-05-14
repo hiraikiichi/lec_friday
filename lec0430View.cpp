@@ -217,3 +217,4 @@ void Clec0430View::OnPenColor()
 	if(dialog.DoModal() == IDOK)
 		mPenColor = dialog.GetColor();
 }
+
