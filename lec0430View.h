@@ -46,7 +46,22 @@ public:
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	// CPoint Points[1000]; // 1000個の頂点を保存できる
 	// int PointsNum;
+	afx_msg void OnPenWidth1();
+	afx_msg void OnPenWidth3();
+	afx_msg void OnPenWidth5();
+private:
 	bool mIsLButtonDown; // bool -> false or true しかもたない
+	int mPenWidth;
+	COLORREF mPenColor;
+public:
+	afx_msg void OnUpdatePenWidth1(CCmdUI* pCmdUI);
+	afx_msg void OnUpdatePenWidth3(CCmdUI* pCmdUI);
+	afx_msg void OnUpdatePenWidth5(CCmdUI* pCmdUI);
+	afx_msg void OnPenBlack();
+	afx_msg void OnPenBlue();
+	afx_msg void OnPenColor();
+	afx_msg void OnPenRed();
+	afx_msg void OnPenGreen();
 };
 
 #ifndef _DEBUG  // lec0430View.cpp のデバッグ バージョン

@@ -48,11 +48,13 @@ protected:
 public:
 	// CPoint Points[1000]; // 1000個の点を保存できる
 
-	CPoint Points[1000][1000]; 
+	CPoint Points[1000][1000]; // 頂点列
 	// int PointsNum;
-	int PointsNum[1000];
-	int LinesNum;
-	void NewLine(CPoint point);
+	int PointsNum[1000]; // 頂点数
+	int Width[1000]; // 1000個の幅を保持
+	COLORREF Color[1000]; // 1000個の色を保持
+	int LinesNum; //図形数
+	void NewLine(CPoint point, int width = 3, COLORREF color = RGB(0,0,0));
 	// void newLine(CPoint point);
 	void AddPoint(CPoint point);
 	void DrawLines(CDC* pDC);

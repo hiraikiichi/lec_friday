@@ -30,6 +30,17 @@ BEGIN_MESSAGE_MAP(Clec0430View, CView)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONUP()
 	ON_WM_MOUSEMOVE()
+	ON_COMMAND(ID_PEN_WIDTH_1, &Clec0430View::OnPenWidth1)
+	ON_COMMAND(ID_PEN_WIDTH_3, &Clec0430View::OnPenWidth3)
+	ON_COMMAND(ID_PEN_WIDTH_5, &Clec0430View::OnPenWidth5)
+	ON_UPDATE_COMMAND_UI(ID_PEN_WIDTH_1, &Clec0430View::OnUpdatePenWidth1)
+	ON_UPDATE_COMMAND_UI(ID_PEN_WIDTH_3, &Clec0430View::OnUpdatePenWidth3)
+	ON_UPDATE_COMMAND_UI(ID_PEN_WIDTH_5, &Clec0430View::OnUpdatePenWidth5)
+	ON_COMMAND(ID_PEN_BLACK, &Clec0430View::OnPenBlack)
+	ON_COMMAND(ID_PEN_BLUE, &Clec0430View::OnPenBlue)
+	ON_COMMAND(ID_PEN_COLOR, &Clec0430View::OnPenColor)
+	ON_COMMAND(ID_PEN_RED, &Clec0430View::OnPenRed)
+	ON_COMMAND(ID_PEN_GREEN, &Clec0430View::OnPenGreen)
 END_MESSAGE_MAP()
 
 // Clec0430View コンストラクション/デストラクション
@@ -40,6 +51,8 @@ Clec0430View::Clec0430View() noexcept
 	// PointsNum = 0; // 起動した直後頂点はゼロ
 	
 	mIsLButtonDown = false; // アプリを起動してウィンドウが開いたらマウスはクリックされていない
+	mPenWidth = 3; // ペンの幅初期値は3
+	mPenColor = RGB(0, 0, 0); // ペンの色初期値は黒
 }
 
 Clec0430View::~Clec0430View()
@@ -118,7 +131,8 @@ void Clec0430View::OnLButtonDown(UINT nFlags, CPoint point) // point -> お前�
 	ASSERT_VALID(pDoc);
 	if (!pDoc) return;
 
-	pDoc->NewLine(point);
+	pDoc->NewLine(point, mPenWidth, mPenColor);
+
 	// Points[0] = point; // -> 本来viewにあったらあかん 頂点を保存
 	// PointsNum = 1; // 超点群の総数を保存
 	// Invalidate(); // In -> 否定する invalidate -> ちゃんとしていない状態にする(無効化) -> ウィンドウを無効化
@@ -143,4 +157,63 @@ void Clec0430View::OnMouseMove(UINT nFlags, CPoint point)
 	// PointsNum++;
 	// Invalidate(); // 自分自身が管理しているウィンドウのみInvalidate
 	// CView::OnMouseMove(nFlags, point); 
+}
+
+// メニュー呼ばれたら新しいペン幅にする
+void Clec0430View::OnPenWidth1()
+{
+	mPenWidth = 1;
+}
+
+void Clec0430View::OnPenWidth3()
+{
+	mPenWidth = 3;
+}
+
+void Clec0430View::OnPenWidth5()
+{
+	mPenWidth = 5;
+}
+
+
+void Clec0430View::OnUpdatePenWidth1(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(mPenWidth == 1);
+}
+
+void Clec0430View::OnUpdatePenWidth3(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(mPenWidth == 3);
+}
+
+void Clec0430View::OnUpdatePenWidth5(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(mPenWidth == 5);
+}
+
+void Clec0430View::OnPenBlack()
+{
+	mPenColor = RGB(0, 0, 0);
+}
+
+void Clec0430View::OnPenBlue()
+{
+	mPenColor = RGB(0, 0, 255);
+}
+
+void Clec0430View::OnPenRed()
+{
+	mPenColor = RGB(255, 0, 0);
+}
+
+void Clec0430View::OnPenGreen()
+{
+	mPenColor = RGB(0, 255, 0);
+}
+
+void Clec0430View::OnPenColor()
+{
+	CMFCColorDialog dialog;
+	if(dialog.DoModal() == IDOK)
+		mPenColor = dialog.GetColor();
 }

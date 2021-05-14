@@ -138,10 +138,12 @@ void Clec0430Doc::Dump(CDumpContext& dc) const
 // Clec0430Doc コマンド
 // インタフェイスの仕様が変わらないときはviewを変えなくてよい
 
-void Clec0430Doc::NewLine(CPoint point)
+void Clec0430Doc::NewLine(CPoint point, int width, COLORREF color)
 {
 	Points[LinesNum][0] = point;
 	PointsNum[LinesNum] = 1;
+	Width[LinesNum] = width;
+	Color[LinesNum] = color;
 	LinesNum++;
 
 	// Points[0] = point;
@@ -162,9 +164,13 @@ void Clec0430Doc::AddPoint(CPoint point)
 void Clec0430Doc::DrawLines(CDC* pDC)
 {
 	// LinesNumの本数分インクリメント
-
-	for(int i = 0; i < LinesNum; i++) 
-		pDC->Polyline(Points[i], PointsNum[i]);
-
+	CPen* pen, * oldPen;
+	for (int i = 0; i < LinesNum; i++) {
+		pen = new CPen(PS_SOLID, Width[i], Color[i]); // 新しいカラーと色でペンを作る
+		oldPen = pDC->SelectObject(pen);
+		pDC->Polyline(Points[i], PointsNum[i]); // ペンで書く
+		pDC->SelectObject(oldPen); //元のペンを渡す
+		delete pen; // 使い終わったペンは消す
+	}
 	// pDC->Polyline(Points, PointsNum);
 }
