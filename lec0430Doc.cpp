@@ -174,3 +174,20 @@ void Clec0430Doc::DrawLines(CDC* pDC)
 	}
 	// pDC->Polyline(Points, PointsNum);
 }
+
+void Clec0430Doc::LoadImage(CString filename)
+{
+	mImage.Load(filename);
+	UpdateAllViews(NULL);
+}
+
+void Clec0430Doc::DrawImage(CDC* pDC)
+{
+	if (mImage.IsNull()) return; // DrawImageは闇雲に呼ばれる可能性があるため
+	mImage.Draw(pDC->m_hDC, 0, 0); // hはハンドラを意味する．m_hDCは構造体
+}
+
+CImage* Clec0430Doc::GetImage()
+{
+	return &mImage;
+}

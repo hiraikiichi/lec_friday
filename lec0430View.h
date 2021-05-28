@@ -4,7 +4,6 @@
 
 #pragma once
 
-
 class Clec0430View : public CView
 {
 protected: // シリアル化からのみ作成します。
@@ -62,6 +61,13 @@ public:
 	afx_msg void OnPenColor();
 	afx_msg void OnPenRed();
 	afx_msg void OnPenGreen();
+	afx_msg void OnImageLoad();
+	afx_msg void OnImageGray();
+	afx_msg void OnImageOriginal();
+	afx_msg void OnUpdateImageOriginal(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateImageGray(CCmdUI* pCmdUI);
+private:
+	int mFilterType;
 };
 
 #ifndef _DEBUG  // lec0430View.cpp のデバッグ バージョン

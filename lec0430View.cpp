@@ -41,6 +41,11 @@ BEGIN_MESSAGE_MAP(Clec0430View, CView)
 	ON_COMMAND(ID_PEN_COLOR, &Clec0430View::OnPenColor)
 	ON_COMMAND(ID_PEN_RED, &Clec0430View::OnPenRed)
 	ON_COMMAND(ID_PEN_GREEN, &Clec0430View::OnPenGreen)
+	ON_COMMAND(ID_IMAGE_LOAD, &Clec0430View::OnImageLoad)
+	ON_COMMAND(ID_IMAGE_GRAY, &Clec0430View::OnImageGray)
+	ON_COMMAND(ID_IMAGE_ORIGINAL, &Clec0430View::OnImageOriginal)
+	ON_UPDATE_COMMAND_UI(ID_IMAGE_ORIGINAL, &Clec0430View::OnUpdateImageOriginal)
+	ON_UPDATE_COMMAND_UI(ID_IMAGE_GRAY, &Clec0430View::OnUpdateImageGray)
 END_MESSAGE_MAP()
 
 // Clec0430View コンストラクション/デストラクション
@@ -53,6 +58,7 @@ Clec0430View::Clec0430View() noexcept
 	mIsLButtonDown = false; // アプリを起動してウィンドウが開いたらマウスはクリックされていない
 	mPenWidth = 3; // ペンの幅初期値は3
 	mPenColor = RGB(0, 0, 0); // ペンの色初期値は黒
+	mFilterType = 0;
 }
 
 Clec0430View::~Clec0430View()
@@ -68,17 +74,25 @@ BOOL Clec0430View::PreCreateWindow(CREATESTRUCT& cs)
 
 void Clec0430View::OnDraw(CDC* pDC)
 {
+	if (mFilterDC.m_hDC == NULL) {
+		mFilter.CreateCompatibleBitmap(pDC, pDC->GetDeviceCaps(HORZRES), pDC->GetDeviceCaps(VERTRES));
+		mFilterDC.CreateCompatibleDC(pDC);
+		mFilterDC.SelectObject(&mFilter);
+		mFilterDC.SelectStockObject(WHITE_BRUSH);
+		mFilterDC.PatBlt(0, 0, pDC->GetDeviceCaps(HORZRES), pDC->GetDeviceCaps(VERTRES), PATCOPY);
+	}
 	Clec0430Doc* pDoc = GetDocument(); 
 	ASSERT_VALID(pDoc);
 	if (!pDoc) return;
+	// pDoc->DrawImage(pDC);
+	CRect windowSize;
+	this->GetClientRect(&windowSize); // 今開いているウィンドウの大きさ取得
+	pDC->BitBlt(0, 0, windowSize.Width(), windowSize.Height(), &mFilterDC, 0, 0, SRCCOPY);
 	pDoc->DrawLines(pDC);
-	//pDC->Polyline(Points, PointsNum);
-	//pDC->MoveTo(Points[0]);
-	//for(int i= 1; i <= PointsNum ; i++)pDC->LineTo(Points[i]);
-
-
+	// pDC->Polyline(Points, PointsNum);
+	// pDC->MoveTo(Points[0]);
+	// for(int i= 1; i <= PointsNum ; i++)pDC->LineTo(Points[i]);
 }
-
 
 // Clec0430View の印刷
 
@@ -97,7 +111,6 @@ void Clec0430View::OnEndPrinting(CDC* /*pDC*/, CPrintInfo* /*pInfo*/)
 {
 	// TODO: 印刷後の後処理を追加してください。
 }
-
 
 // Clec0430View の診断
 
@@ -118,7 +131,6 @@ Clec0430Doc* Clec0430View::GetDocument() const // デバッグ以外のバージ
 	return (Clec0430Doc*)m_pDocument;
 }
 #endif //_DEBUG
-
 
 // Clec0430View メッセージ ハンドラー
 // マウスを押しているときに動かすと描画される．
@@ -218,3 +230,50 @@ void Clec0430View::OnPenColor()
 		mPenColor = dialog.GetColor();
 }
 
+void Clec0430View::OnImageLoad()
+{
+	Clec0430Doc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc) return;
+	CFileDialog dialog(true); // ファイル読み込み
+	if (dialog.DoModal() != IDOK) return; // IDOKじゃないものはreturn
+	pDoc->LoadImage(dialog.GetPathName()); // ユーザが選んだファイルパスはGetPathNameに
+	mFilterType = ID_IMAGE_ORIGINAL;
+	ApplyFilter();
+}
+
+void Clec0430View::OnImageGray()
+{
+	mFilterType = ID_IMAGE_GRAY;
+	ApplyFilter();
+}
+
+void Clec0430View::OnImageOriginal() // 元に戻す
+{
+	mFilterType = ID_IMAGE_ORIGINAL;
+	ApplyFilter();
+}
+
+void Clec0430View::OnUpdateImageOriginal(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(mFilterType == ID_IMAGE_ORIGINAL);
+}
+
+void Clec0430View::OnUpdateImageGray(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(mFilterType == ID_IMAGE_GRAY);
+}
+
+void Clec0430View::ApplyFilter()
+{
+	Clec0430Doc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc) return;
+	if (mFilterType == ID_IMAGE_ORIGINAL) {
+		pDoc->DrawImage(&mFilterDC);
+	} 
+	else if (mFilterType == ID_IMAGE_GRAY) {
+
+	}
+	Invalidate();
+}

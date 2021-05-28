@@ -58,4 +58,10 @@ public:
 	// void newLine(CPoint point);
 	void AddPoint(CPoint point);
 	void DrawLines(CDC* pDC);
+private:
+	CImage mImage;
+public:
+	void LoadImage(CString filename);
+	void DrawImage(CDC* pDC);
+	CImage* GetImage();
 };
