@@ -68,6 +68,9 @@ public:
 	afx_msg void OnUpdateImageGray(CCmdUI* pCmdUI);
 private:
 	int mFilterType;
+	CBitmap mFilter;
+	CDC mFilterDC;
+	void ApplyFilter();
 };
 
 #ifndef _DEBUG  // lec0430View.cpp のデバッグ バージョン

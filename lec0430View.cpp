@@ -74,7 +74,7 @@ BOOL Clec0430View::PreCreateWindow(CREATESTRUCT& cs)
 
 void Clec0430View::OnDraw(CDC* pDC)
 {
-	if (mFilterDC.m_hDC == NULL) {
+	if (mFilterDC.m_hDC == NULL) { // 出来上がった画像をmFilterDCで管理
 		mFilter.CreateCompatibleBitmap(pDC, pDC->GetDeviceCaps(HORZRES), pDC->GetDeviceCaps(VERTRES));
 		mFilterDC.CreateCompatibleDC(pDC);
 		mFilterDC.SelectObject(&mFilter);
@@ -225,9 +225,9 @@ void Clec0430View::OnPenGreen()
 
 void Clec0430View::OnPenColor()
 {
-	CMFCColorDialog dialog;
+	CMFCColorDialog dialog; // カラーセレクターを表示
 	if(dialog.DoModal() == IDOK)
-		mPenColor = dialog.GetColor();
+		mPenColor = dialog.GetColor(); // 
 }
 
 void Clec0430View::OnImageLoad()
@@ -269,11 +269,26 @@ void Clec0430View::ApplyFilter()
 	Clec0430Doc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
 	if (!pDoc) return;
+	CImage* pImage = pDoc->GetImage(); // イメージをもらう
+	if (pImage->IsNull()) return; 
+	int w = pImage->GetWidth(); // イメージの幅と高さをもらう
+	int h = pImage->GetHeight();
+	COLORREF src, res; // 元画像の色情報を保存
+	int i, j, r, g, b;
+
 	if (mFilterType == ID_IMAGE_ORIGINAL) {
 		pDoc->DrawImage(&mFilterDC);
 	} 
 	else if (mFilterType == ID_IMAGE_GRAY) {
-
+		for (i = 0; i < w; i++) for (j = 0; j < h; j++) { // 画像を全てスキャン
+			src = pImage->GetPixel(i, j); // 元画像を取ってくる 32bitのint型　rgbが1つに入ってる感じ
+			r = GetRValue(src); // 最初の8bitを取得
+			g = GetGValue(src); // 8bit以降を取得
+			b = GetBValue(src); // 17bit以降取得
+			// 少数計算はfloatより，doubleの方がよい
+			res = int(double(r) * 0.3 + double(g) * 0.59 + double(b) * 0.11);
+			mFilterDC.SetPixel(i, j, RGB(res, res, res));
+		}
 	}
 	Invalidate();
 }
