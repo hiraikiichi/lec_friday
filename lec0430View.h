@@ -66,11 +66,21 @@ public:
 	afx_msg void OnImageOriginal();
 	afx_msg void OnUpdateImageOriginal(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateImageGray(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateImage(CCmdUI* pCmdUI);
+
 private:
 	int mFilterType;
 	CBitmap mFilter;
 	CDC mFilterDC;
+	CBitmap mBackBuffer;
+	CDC mBackBufferDC;
 	void ApplyFilter();
+public:
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnImageAverage();
+	afx_msg void OnUpdateImageAverage(CCmdUI* pCmdUI);
+	afx_msg void OnImageAveraged();
+	afx_msg void OnUpdateImageAveraged(CCmdUI* pCmdUI);
 };
 
 #ifndef _DEBUG  // lec0430View.cpp のデバッグ バージョン

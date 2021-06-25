@@ -44,8 +44,13 @@ BEGIN_MESSAGE_MAP(Clec0430View, CView)
 	ON_COMMAND(ID_IMAGE_LOAD, &Clec0430View::OnImageLoad)
 	ON_COMMAND(ID_IMAGE_GRAY, &Clec0430View::OnImageGray)
 	ON_COMMAND(ID_IMAGE_ORIGINAL, &Clec0430View::OnImageOriginal)
-	ON_UPDATE_COMMAND_UI(ID_IMAGE_ORIGINAL, &Clec0430View::OnUpdateImageOriginal)
-	ON_UPDATE_COMMAND_UI(ID_IMAGE_GRAY, &Clec0430View::OnUpdateImageGray)
+	ON_UPDATE_COMMAND_UI(ID_IMAGE_ORIGINAL, &Clec0430View::OnUpdateImage)
+	ON_UPDATE_COMMAND_UI(ID_IMAGE_GRAY, &Clec0430View::OnUpdateImage)
+	ON_WM_ERASEBKGND()
+	ON_COMMAND(ID_IMAGE_AVERAGE, &Clec0430View::OnImageAverage)
+	ON_UPDATE_COMMAND_UI(ID_IMAGE_AVERAGE, &Clec0430View::OnUpdateImage)
+	ON_COMMAND(ID_IMAGE_AVERAGED, &Clec0430View::OnImageAveraged)
+	ON_UPDATE_COMMAND_UI(ID_IMAGE_AVERAGED, &Clec0430View::OnUpdateImage)
 END_MESSAGE_MAP()
 
 // Clec0430View コンストラクション/デストラクション
@@ -80,6 +85,10 @@ void Clec0430View::OnDraw(CDC* pDC)
 		mFilterDC.SelectObject(&mFilter);
 		mFilterDC.SelectStockObject(WHITE_BRUSH);
 		mFilterDC.PatBlt(0, 0, pDC->GetDeviceCaps(HORZRES), pDC->GetDeviceCaps(VERTRES), PATCOPY);
+		// BackBuffer処理(作る処理)
+		mBackBuffer.CreateCompatibleBitmap(pDC, pDC->GetDeviceCaps(HORZRES), pDC->GetDeviceCaps(VERTRES));
+		mBackBufferDC.CreateCompatibleDC(pDC);
+		mBackBufferDC.SelectObject(mBackBuffer);
 	}
 	Clec0430Doc* pDoc = GetDocument(); 
 	ASSERT_VALID(pDoc);
@@ -87,8 +96,15 @@ void Clec0430View::OnDraw(CDC* pDC)
 	// pDoc->DrawImage(pDC);
 	CRect windowSize;
 	this->GetClientRect(&windowSize); // 今開いているウィンドウの大きさ取得
-	pDC->BitBlt(0, 0, windowSize.Width(), windowSize.Height(), &mFilterDC, 0, 0, SRCCOPY);
-	pDoc->DrawLines(pDC);
+	// pDCの処理をBackBufferに 絵と線の処理
+	mBackBufferDC.BitBlt(0, 0, windowSize.Width(), windowSize.Height(), &mFilterDC, 0, 0, SRCCOPY);
+	pDoc->DrawLines(&mBackBufferDC);
+	// 処理が終わったらBackBufferをpDCにコピーすればよい 最後画面のコピーだけをする
+	pDC->BitBlt(0, 0, windowSize.Width(), windowSize.Height(), &mBackBufferDC, 0, 0, SRCCOPY);
+
+	// ↓old
+	// pDC->BitBlt(0, 0, windowSize.Width(), windowSize.Height(), &mFilterDC, 0, 0, SRCCOPY);
+	// pDoc->DrawLines(pDC);
 	// pDC->Polyline(Points, PointsNum);
 	// pDC->MoveTo(Points[0]);
 	// for(int i= 1; i <= PointsNum ; i++)pDC->LineTo(Points[i]);
@@ -253,7 +269,7 @@ void Clec0430View::OnImageOriginal() // 元に戻す
 	mFilterType = ID_IMAGE_ORIGINAL;
 	ApplyFilter();
 }
-
+/*
 void Clec0430View::OnUpdateImageOriginal(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(mFilterType == ID_IMAGE_ORIGINAL);
@@ -263,7 +279,7 @@ void Clec0430View::OnUpdateImageGray(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(mFilterType == ID_IMAGE_GRAY);
 }
-
+*/
 void Clec0430View::ApplyFilter()
 {
 	Clec0430Doc* pDoc = GetDocument();
@@ -274,8 +290,9 @@ void Clec0430View::ApplyFilter()
 	int w = pImage->GetWidth(); // イメージの幅と高さをもらう
 	int h = pImage->GetHeight();
 	COLORREF src, res; // 元画像の色情報を保存
-	int i, j, r, g, b;
-
+	int i, ii, j, jj, r, g, b;
+	double dr, dg, db;
+	BeginWaitCursor();
 	if (mFilterType == ID_IMAGE_ORIGINAL) {
 		pDoc->DrawImage(&mFilterDC);
 	} 
@@ -290,5 +307,58 @@ void Clec0430View::ApplyFilter()
 			mFilterDC.SetPixel(i, j, RGB(res, res, res));
 		}
 	}
+	else if (mFilterType == ID_IMAGE_AVERAGE) {
+		for (i = 1; i < w - 1; i++)for (j = 1; j < h - 1; j++) {
+			r = g = b = 0;
+			for (ii = i - 1; ii <= i + 1; ii++)for (jj = j - 1; jj <= j + 1; jj++) {
+				src = pImage->GetPixel(ii, jj);
+				r += GetRValue(src);
+				g += GetGValue(src);
+				b += GetBValue(src);
+			}
+			mFilterDC.SetPixel(i, j, RGB(r / 9, g / 9, b / 9));
+		}
+	}
+	else if (mFilterType == ID_IMAGE_AVERAGED) {
+		double averageFilter[3][3] = { {0.11,0.11,0.11},{0.11,0.12,0.11},{0.11,0.11,0.11} };
+		for (i = 1; i < w - 1; i++)for (j = 1; j < h - 1; j++) {
+			dr = dg = db = 0.0;
+			for (ii = 0; ii < 3; ii++)for (jj = 0; jj < 3; jj++) {
+				src = pImage->GetPixel(i + ii - 1, j + jj - 1);
+				dr += double(GetRValue(src)) * averageFilter[ii][jj];
+				dg += double(GetGValue(src)) * averageFilter[ii][jj];
+				db += double(GetBValue(src)) * averageFilter[ii][jj];
+			}
+			mFilterDC.SetPixel(i, j, RGB(int(dr), int(dg), int(db)));
+		}
+	}
 	Invalidate();
+	EndWaitCursor();
+}
+
+// ちらつき防止
+BOOL Clec0430View::OnEraseBkgnd(CDC* pDC)
+{
+	return true;
+	// return CView::OnEraseBkgnd(pDC);
+}
+
+
+void Clec0430View::OnImageAverage()
+{
+	mFilterType = ID_IMAGE_AVERAGE;
+	ApplyFilter();
+}
+
+
+void Clec0430View::OnUpdateImage(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(mFilterType == pCmdUI->m_nID);
+}
+
+
+void Clec0430View::OnImageAveraged()
+{
+	mFilterType = ID_IMAGE_AVERAGED;
+	ApplyFilter();
 }
