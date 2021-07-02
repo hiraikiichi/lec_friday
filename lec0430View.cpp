@@ -1,9 +1,6 @@
-﻿
-// lec0430View.cpp : Clec0430View クラスの実装
-//
-
-#include "pch.h"
+﻿#include "pch.h"
 #include "framework.h"
+#include <iostream>
 // SHARED_HANDLERS は、プレビュー、縮小版、および検索フィルター ハンドラーを実装している ATL プロジェクトで定義でき、
 // そのプロジェクトとのドキュメント コードの共有を可能にします。
 #ifndef SHARED_HANDLERS
@@ -290,9 +287,13 @@ void Clec0430View::ApplyFilter()
 	if (pImage->IsNull()) return; 
 	int w = pImage->GetWidth(); // イメージの幅と高さをもらう
 	int h = pImage->GetHeight();
-	COLORREF src, res; // 元画像の色情報を保存
+	COLORREF src, res, top_src; // 元画像の色情報を保存
 	int i, ii, j, jj, r, g, b;
 	double dr, dg, db;
+	double Hue;			//色相
+	double Saturation;	//彩度
+	double Value;
+	double rr, gg, bb;
 	BeginWaitCursor();
 	if (mFilterType == ID_IMAGE_ORIGINAL) {
 		pDoc->DrawImage(&mFilterDC);
@@ -334,17 +335,46 @@ void Clec0430View::ApplyFilter()
 		}
 	}
 	else if (mFilterType == ID_IMAGE_MASK) {
+
 		for (i = 0; i < w; i++) for (j = 0; j < h; j++) { // 画像を全てスキャン
 			src = pImage->GetPixel(i, j); // 元画像を取ってくる 32bitのint型　rgbが1つに入ってる感じ
-			r = GetRValue(src); // 最初の8bitを取得
-			g = GetGValue(src); // 8bit以降を取得
-			b = GetBValue(src); // 17bit以降取得
-			// 少数計算はfloatより，doubleの方がよい
+			rr = GetRValue(src); // 最初の8bitを取得
+			gg = GetGValue(src); // 8bit以降を取得
+			bb = GetBValue(src); // 17bit以降取得
+			// RGB -> HSV
+			double MAX = max((max(rr, gg)), bb);
+			double MIN = min((min(rr, gg)), bb);
+			Value = MAX / 256 * 100;
 
+			if (MAX == MIN) {
+				Hue = 0;
+				Saturation = 0;
+			}
+			else {
+				if (MAX == rr) Hue = 60.0 * ((gg - bb) / (MAX - MIN));
+				else if (MAX == gg) Hue = 60.0 * ((bb - rr) / (MAX - MIN)) + 120.0;
+				else if (MAX == bb) Hue = 60.0 * ((rr - gg) / (MAX - MIN)) + 240.0;
+
+				if (Hue > 360.0) Hue = Hue - 360.0;
+				else if (Hue < 0) Hue = Hue + 360.0;
+				Saturation = ((MAX - MIN) / MAX) * 100;
+			}
+			// TRACE("R = %f, G = %f, B = %f \n", rr, gg, bb);
+			// TRACE("H = %f, S = %f, V = %f \n", Hue, Saturation, Value);
+
+			// 少数計算はfloatより，doubleの方がよい
+			// TRACE("src = %d \n", src);
+			// TRACE("r = %d, g = %d, b = %d\n", r,g,b);
 			// 白色に
-			res = int(double(r) + double(g) * 0.59 + double(b) );
-			// res = int(double(r) * 0.3 + double(g) * 0.59 + double(b) * 0.11);
-			mFilterDC.SetPixel(i, j, RGB(r, res, b));
+
+			if (Hue > 100 && Hue <= 180 && Saturation > 70 && Value > 40) {
+				mFilterDC.SetPixel(i, j, RGB(255, 255, 255));
+			}
+			else {
+				mFilterDC.SetPixel(i, j, RGB(int(rr), int(gg), int(bb) ));
+			}
+			// res = int(double(r) * 0 + double(g) * 0 + double(b) * 0);
+			
 		}
 	}
 	Invalidate();

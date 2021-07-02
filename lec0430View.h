@@ -52,6 +52,7 @@ private:
 	bool mIsLButtonDown; // bool -> false or true しかもたない
 	int mPenWidth;
 	COLORREF mPenColor;
+	COLORREF backColor;
 public:
 	afx_msg void OnUpdatePenWidth1(CCmdUI* pCmdUI);
 	afx_msg void OnUpdatePenWidth3(CCmdUI* pCmdUI);
