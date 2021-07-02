@@ -51,13 +51,14 @@ BEGIN_MESSAGE_MAP(Clec0430View, CView)
 	ON_UPDATE_COMMAND_UI(ID_IMAGE_AVERAGE, &Clec0430View::OnUpdateImage)
 	ON_COMMAND(ID_IMAGE_AVERAGED, &Clec0430View::OnImageAveraged)
 	ON_UPDATE_COMMAND_UI(ID_IMAGE_AVERAGED, &Clec0430View::OnUpdateImage)
+	ON_COMMAND(ID_IMAGE_MASK, &Clec0430View::OnImageMask)
+	ON_UPDATE_COMMAND_UI(ID_IMAGE_MASK, &Clec0430View::OnUpdateImage)
 END_MESSAGE_MAP()
 
 // Clec0430View コンストラクション/デストラクション
 
 Clec0430View::Clec0430View() noexcept
 {
-	// TODO: 構築コードをここに追加します。
 	// PointsNum = 0; // 起動した直後頂点はゼロ
 	
 	mIsLButtonDown = false; // アプリを起動してウィンドウが開いたらマウスはクリックされていない
@@ -332,6 +333,20 @@ void Clec0430View::ApplyFilter()
 			mFilterDC.SetPixel(i, j, RGB(int(dr), int(dg), int(db)));
 		}
 	}
+	else if (mFilterType == ID_IMAGE_MASK) {
+		for (i = 0; i < w; i++) for (j = 0; j < h; j++) { // 画像を全てスキャン
+			src = pImage->GetPixel(i, j); // 元画像を取ってくる 32bitのint型　rgbが1つに入ってる感じ
+			r = GetRValue(src); // 最初の8bitを取得
+			g = GetGValue(src); // 8bit以降を取得
+			b = GetBValue(src); // 17bit以降取得
+			// 少数計算はfloatより，doubleの方がよい
+
+			// 白色に
+			res = int(double(r) + double(g) * 0.59 + double(b) );
+			// res = int(double(r) * 0.3 + double(g) * 0.59 + double(b) * 0.11);
+			mFilterDC.SetPixel(i, j, RGB(r, res, b));
+		}
+	}
 	Invalidate();
 	EndWaitCursor();
 }
@@ -343,22 +358,25 @@ BOOL Clec0430View::OnEraseBkgnd(CDC* pDC)
 	// return CView::OnEraseBkgnd(pDC);
 }
 
-
 void Clec0430View::OnImageAverage()
 {
 	mFilterType = ID_IMAGE_AVERAGE;
 	ApplyFilter();
 }
 
-
 void Clec0430View::OnUpdateImage(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(mFilterType == pCmdUI->m_nID);
 }
 
-
 void Clec0430View::OnImageAveraged()
 {
 	mFilterType = ID_IMAGE_AVERAGED;
+	ApplyFilter();
+}
+
+void Clec0430View::OnImageMask()
+{
+	mFilterType = ID_IMAGE_MASK;
 	ApplyFilter();
 }
