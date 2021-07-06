@@ -83,6 +83,7 @@ public:
 	afx_msg void OnImageAveraged();
 	afx_msg void OnUpdateImageAveraged(CCmdUI* pCmdUI);
 	afx_msg void OnImageMask();
+	afx_msg void OnImageLoad2();
 };
 
 #ifndef _DEBUG  // lec0430View.cpp のデバッグ バージョン

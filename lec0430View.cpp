@@ -50,6 +50,7 @@ BEGIN_MESSAGE_MAP(Clec0430View, CView)
 	ON_UPDATE_COMMAND_UI(ID_IMAGE_AVERAGED, &Clec0430View::OnUpdateImage)
 	ON_COMMAND(ID_IMAGE_MASK, &Clec0430View::OnImageMask)
 	ON_UPDATE_COMMAND_UI(ID_IMAGE_MASK, &Clec0430View::OnUpdateImage)
+	ON_COMMAND(ID_IMAGE_LOAD2, &Clec0430View::OnImageLoad2)
 END_MESSAGE_MAP()
 
 // Clec0430View コンストラクション/デストラクション
@@ -278,16 +279,30 @@ void Clec0430View::OnUpdateImageGray(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(mFilterType == ID_IMAGE_GRAY);
 }
 */
+int num = 0;
 void Clec0430View::ApplyFilter()
 {
 	Clec0430Doc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
 	if (!pDoc) return;
 	CImage* pImage = pDoc->GetImage(); // イメージをもらう
-	if (pImage->IsNull()) return; 
-	int w = pImage->GetWidth(); // イメージの幅と高さをもらう
-	int h = pImage->GetHeight();
-	COLORREF src, res, top_src; // 元画像の色情報を保存
+	if (pImage->IsNull()) return;
+	
+	int w = 0, h = 0, w2 = 0, h2 = 0;
+	if (num == 0) {
+		int w = pImage->GetWidth(); // イメージの幅と高さをもらう
+		int h = pImage->GetHeight();
+		
+		TRACE("w = %d, h = %d, num = %d\n", w,h, num);
+		num += 1;
+	}
+	else {
+		int w2 = pImage->GetWidth(); // イメージの幅と高さをもらう
+		int h2 = pImage->GetHeight();
+		TRACE("w = %d, h = %d, num = %d\n", w2, h2, num);
+	}
+	
+	COLORREF src, res; // 元画像の色情報を保存
 	int i, ii, j, jj, r, g, b;
 	double dr, dg, db;
 	double Hue;			//色相
@@ -336,6 +351,9 @@ void Clec0430View::ApplyFilter()
 	}
 	else if (mFilterType == ID_IMAGE_MASK) {
 
+		
+
+
 		for (i = 0; i < w; i++) for (j = 0; j < h; j++) { // 画像を全てスキャン
 			src = pImage->GetPixel(i, j); // 元画像を取ってくる 32bitのint型　rgbが1つに入ってる感じ
 			rr = GetRValue(src); // 最初の8bitを取得
@@ -361,10 +379,6 @@ void Clec0430View::ApplyFilter()
 			}
 			// TRACE("R = %f, G = %f, B = %f \n", rr, gg, bb);
 			// TRACE("H = %f, S = %f, V = %f \n", Hue, Saturation, Value);
-
-			// 少数計算はfloatより，doubleの方がよい
-			// TRACE("src = %d \n", src);
-			// TRACE("r = %d, g = %d, b = %d\n", r,g,b);
 			// 白色に
 
 			if (Hue > 100 && Hue <= 180 && Saturation > 70 && Value > 40) {
@@ -408,5 +422,17 @@ void Clec0430View::OnImageAveraged()
 void Clec0430View::OnImageMask()
 {
 	mFilterType = ID_IMAGE_MASK;
+	ApplyFilter();
+}
+
+void Clec0430View::OnImageLoad2()
+{
+	Clec0430Doc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc) return;
+	CFileDialog dialog(true); // ファイル読み込み
+	if (dialog.DoModal() != IDOK) return; // IDOKじゃないものはreturn
+	pDoc->LoadImage(dialog.GetPathName()); // ユーザが選んだファイルパスはGetPathNameに
+	mFilterType = ID_IMAGE_LOAD;
 	ApplyFilter();
 }
