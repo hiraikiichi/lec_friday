@@ -257,6 +257,18 @@ void Clec0430View::OnImageLoad()
 	ApplyFilter();
 }
 
+void Clec0430View::OnImageLoad2()
+{
+	Clec0430Doc* pDoc2 = GetDocument();
+	ASSERT_VALID(pDoc2);
+	if (!pDoc2) return;
+	CFileDialog dialog(true); // ファイル読み込み
+	if (dialog.DoModal() != IDOK) return; // IDOKじゃないものはreturn
+	pDoc2->LoadImage(dialog.GetPathName()); // ユーザが選んだファイルパスはGetPathNameに
+	mFilterType = ID_IMAGE_LOAD;
+	ApplyFilter();
+}
+
 void Clec0430View::OnImageGray()
 {
 	mFilterType = ID_IMAGE_GRAY;
@@ -279,28 +291,27 @@ void Clec0430View::OnUpdateImageGray(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(mFilterType == ID_IMAGE_GRAY);
 }
 */
-int num = 0;
+
+int w = 0, h = 0, w2 = 0, h2 = 0;
 void Clec0430View::ApplyFilter()
 {
+	/*
 	Clec0430Doc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
 	if (!pDoc) return;
 	CImage* pImage = pDoc->GetImage(); // イメージをもらう
 	if (pImage->IsNull()) return;
 	
-	int w = 0, h = 0, w2 = 0, h2 = 0;
-	if (num == 0) {
 		int w = pImage->GetWidth(); // イメージの幅と高さをもらう
 		int h = pImage->GetHeight();
-		
-		TRACE("w = %d, h = %d, num = %d\n", w,h, num);
-		num += 1;
+		TRACE("w = %d, h = %d\n", w,h);
 	}
 	else {
-		int w2 = pImage->GetWidth(); // イメージの幅と高さをもらう
-		int h2 = pImage->GetHeight();
-		TRACE("w = %d, h = %d, num = %d\n", w2, h2, num);
+		// int w2 = pImage->GetWidth(); // イメージの幅と高さをもらう
+		// int h2 = pImage->GetHeight();
+		TRACE("w = %d, h = %d\n", w2, h2);
 	}
+	*/
 	
 	COLORREF src, res; // 元画像の色情報を保存
 	int i, ii, j, jj, r, g, b;
@@ -310,52 +321,103 @@ void Clec0430View::ApplyFilter()
 	double Value;
 	double rr, gg, bb;
 	BeginWaitCursor();
-	if (mFilterType == ID_IMAGE_ORIGINAL) {
-		pDoc->DrawImage(&mFilterDC);
-	} 
-	else if (mFilterType == ID_IMAGE_GRAY) {
-		for (i = 0; i < w; i++) for (j = 0; j < h; j++) { // 画像を全てスキャン
-			src = pImage->GetPixel(i, j); // 元画像を取ってくる 32bitのint型　rgbが1つに入ってる感じ
-			r = GetRValue(src); // 最初の8bitを取得
-			g = GetGValue(src); // 8bit以降を取得
-			b = GetBValue(src); // 17bit以降取得
-			// 少数計算はfloatより，doubleの方がよい
-			res = int(double(r) * 0.3 + double(g) * 0.59 + double(b) * 0.11);
-			mFilterDC.SetPixel(i, j, RGB(res, res, res));
+	if (mFilterType == ID_IMAGE_ORIGINAL || mFilterType == ID_IMAGE_GRAY || mFilterType == ID_IMAGE_AVERAGE || mFilterType == ID_IMAGE_AVERAGED || mFilterType == ID_IMAGE_MASK) {
+		Clec0430Doc* pDoc = GetDocument();
+		ASSERT_VALID(pDoc);
+		if (!pDoc) return;
+		CImage* pImage = pDoc->GetImage(); // イメージをもらう
+		if (pImage->IsNull()) return;
+		int w = pImage->GetWidth(); // イメージの幅と高さをもらう
+		int h = pImage->GetHeight();
+		if (mFilterType == ID_IMAGE_ORIGINAL) {
+			pDoc->DrawImage(&mFilterDC);
 		}
-	}
-	else if (mFilterType == ID_IMAGE_AVERAGE) {
-		for (i = 1; i < w - 1; i++)for (j = 1; j < h - 1; j++) {
-			r = g = b = 0;
-			for (ii = i - 1; ii <= i + 1; ii++)for (jj = j - 1; jj <= j + 1; jj++) {
-				src = pImage->GetPixel(ii, jj);
-				r += GetRValue(src);
-				g += GetGValue(src);
-				b += GetBValue(src);
+		else if (mFilterType == ID_IMAGE_GRAY) {
+			for (i = 0; i < w; i++) for (j = 0; j < h; j++) { // 画像を全てスキャン
+				src = pImage->GetPixel(i, j); // 元画像を取ってくる 32bitのint型　rgbが1つに入ってる感じ
+				r = GetRValue(src); // 最初の8bitを取得
+				g = GetGValue(src); // 8bit以降を取得
+				b = GetBValue(src); // 17bit以降取得
+				// 少数計算はfloatより，doubleの方がよい
+				res = int(double(r) * 0.3 + double(g) * 0.59 + double(b) * 0.11);
+				mFilterDC.SetPixel(i, j, RGB(res, res, res));
 			}
-			mFilterDC.SetPixel(i, j, RGB(r / 9, g / 9, b / 9));
 		}
-	}
-	else if (mFilterType == ID_IMAGE_AVERAGED) {
-		double averageFilter[3][3] = { {0.11,0.11,0.11},{0.11,0.12,0.11},{0.11,0.11,0.11} };
-		for (i = 1; i < w - 1; i++)for (j = 1; j < h - 1; j++) {
-			dr = dg = db = 0.0;
-			for (ii = 0; ii < 3; ii++)for (jj = 0; jj < 3; jj++) {
-				src = pImage->GetPixel(i + ii - 1, j + jj - 1);
-				dr += double(GetRValue(src)) * averageFilter[ii][jj];
-				dg += double(GetGValue(src)) * averageFilter[ii][jj];
-				db += double(GetBValue(src)) * averageFilter[ii][jj];
+		else if (mFilterType == ID_IMAGE_AVERAGE) {
+			for (i = 1; i < w - 1; i++)for (j = 1; j < h - 1; j++) {
+				r = g = b = 0;
+				for (ii = i - 1; ii <= i + 1; ii++)for (jj = j - 1; jj <= j + 1; jj++) {
+					src = pImage->GetPixel(ii, jj);
+					r += GetRValue(src);
+					g += GetGValue(src);
+					b += GetBValue(src);
+				}
+				mFilterDC.SetPixel(i, j, RGB(r / 9, g / 9, b / 9));
 			}
-			mFilterDC.SetPixel(i, j, RGB(int(dr), int(dg), int(db)));
+		}
+		else if (mFilterType == ID_IMAGE_AVERAGED) {
+			double averageFilter[3][3] = { {0.11,0.11,0.11},{0.11,0.12,0.11},{0.11,0.11,0.11} };
+			for (i = 1; i < w - 1; i++)for (j = 1; j < h - 1; j++) {
+				dr = dg = db = 0.0;
+				for (ii = 0; ii < 3; ii++)for (jj = 0; jj < 3; jj++) {
+					src = pImage->GetPixel(i + ii - 1, j + jj - 1);
+					dr += double(GetRValue(src)) * averageFilter[ii][jj];
+					dg += double(GetGValue(src)) * averageFilter[ii][jj];
+					db += double(GetBValue(src)) * averageFilter[ii][jj];
+				}
+				mFilterDC.SetPixel(i, j, RGB(int(dr), int(dg), int(db)));
+			}
+		}
+		else if (mFilterType == ID_IMAGE_MASK) {
+			for (i = 0; i < w; i++) for (j = 0; j < h; j++) { // 画像を全てスキャン
+				src = pImage->GetPixel(i, j); // 元画像を取ってくる 32bitのint型　rgbが1つに入ってる感じ
+				rr = GetRValue(src); // 最初の8bitを取得
+				gg = GetGValue(src); // 8bit以降を取得
+				bb = GetBValue(src); // 17bit以降取得
+				// RGB -> HSV
+				double MAX = max((max(rr, gg)), bb);
+				double MIN = min((min(rr, gg)), bb);
+				Value = MAX / 256 * 100;
+
+				if (MAX == MIN) {
+					Hue = 0;
+					Saturation = 0;
+				}
+				else {
+					if (MAX == rr) Hue = 60.0 * ((gg - bb) / (MAX - MIN));
+					else if (MAX == gg) Hue = 60.0 * ((bb - rr) / (MAX - MIN)) + 120.0;
+					else if (MAX == bb) Hue = 60.0 * ((rr - gg) / (MAX - MIN)) + 240.0;
+
+					if (Hue > 360.0) Hue = Hue - 360.0;
+					else if (Hue < 0) Hue = Hue + 360.0;
+					Saturation = ((MAX - MIN) / MAX) * 100;
+				}
+				// TRACE("R = %f, G = %f, B = %f \n", rr, gg, bb);
+				// TRACE("H = %f, S = %f, V = %f \n", Hue, Saturation, Value);
+				// 白色に
+
+				if (Hue > 100 && Hue <= 180 && Saturation > 70 && Value > 40) {
+					mFilterDC.SetPixel(i, j, RGB(255, 255, 255));
+				}
+				else {
+					mFilterDC.SetPixel(i, j, RGB(int(rr), int(gg), int(bb)));
+				}
+
+			}
 		}
 	}
-	else if (mFilterType == ID_IMAGE_MASK) {
-
-		
-
-
+	else if (mFilterType == ID_IMAGE_LOAD) {
+		Clec0430Doc* pDoc2 = GetDocument();
+		ASSERT_VALID(pDoc2);
+		if (!pDoc2) return;
+		CImage* pImage2 = pDoc2->GetImage(); // イメージをもらう
+		if (pImage2->IsNull()) return;
+		pDoc2->DrawImage(&mFilterDC);
+		// int w2 = pImage2->GetWidth(); // イメージの幅と高さをもらう
+		// int h2 = pImage2->GetHeight();
+		/*
 		for (i = 0; i < w; i++) for (j = 0; j < h; j++) { // 画像を全てスキャン
-			src = pImage->GetPixel(i, j); // 元画像を取ってくる 32bitのint型　rgbが1つに入ってる感じ
+			src = pImage2->GetPixel(i, j); // 元画像を取ってくる 32bitのint型　rgbが1つに入ってる感じ
 			rr = GetRValue(src); // 最初の8bitを取得
 			gg = GetGValue(src); // 8bit以降を取得
 			bb = GetBValue(src); // 17bit以降取得
@@ -390,6 +452,7 @@ void Clec0430View::ApplyFilter()
 			// res = int(double(r) * 0 + double(g) * 0 + double(b) * 0);
 			
 		}
+		*/
 	}
 	Invalidate();
 	EndWaitCursor();
@@ -424,15 +487,28 @@ void Clec0430View::OnImageMask()
 	mFilterType = ID_IMAGE_MASK;
 	ApplyFilter();
 }
-
+/*
 void Clec0430View::OnImageLoad2()
 {
-	Clec0430Doc* pDoc = GetDocument();
-	ASSERT_VALID(pDoc);
-	if (!pDoc) return;
+	
+	Clec0430Doc* pDoc2 = GetDocument();
+	ASSERT_VALID(pDoc2);
+	if (!pDoc2) return;
 	CFileDialog dialog(true); // ファイル読み込み
 	if (dialog.DoModal() != IDOK) return; // IDOKじゃないものはreturn
-	pDoc->LoadImage(dialog.GetPathName()); // ユーザが選んだファイルパスはGetPathNameに
+	pDoc2->LoadImage(dialog.GetPathName()); // ユーザが選んだファイルパスはGetPathNameに
+	// mFilterType = ID_IMAGE_LOAD;
+	// ApplyFilter();
+	
+
+	// CImage* pImage2 = pDoc2->GetImage(); // イメージをもらう
+	// if (pImage2->IsNull()) return;
+	
+	// int w2 = pImage2->GetWidth(); // イメージの幅と高さをもらう
+	// int h2 = pImage2->GetHeight();
+	// if (w2 * h2 > w * h) return;
 	mFilterType = ID_IMAGE_LOAD;
 	ApplyFilter();
+
 }
+*/
